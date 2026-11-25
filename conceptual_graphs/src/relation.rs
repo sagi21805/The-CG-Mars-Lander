@@ -78,3 +78,21 @@ impl<C> ConceptualRelation<C> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::ConceptualRelation;
+
+    #[test]
+    fn map_visits_concepts_in_field_order() {
+        let mut visited = Vec::new();
+        ConceptualRelation::Prepositional {
+            head: 'a',
+            preposition: 'b',
+            object: 'c',
+        }
+        .map(|concept| visited.push(concept));
+
+        assert_eq!(visited, ['a', 'b', 'c']);
+    }
+}

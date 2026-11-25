@@ -117,3 +117,66 @@ impl fmt::Display for ConceptualGraph<'_> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use link_grammar::{Dictionary, Language, Sentence};
+
+    use crate::{Concept, ConceptualGraph, ConceptualRelation, Context};
+
+    /// "The girl eats pie.", where words[2] is `girl` and words[3] is
+    /// `eats`.
+    const SENTENCE: &str = "The girl eats pie.";
+
+    #[test]
+    fn adding_the_same_words_twice_returns_the_first_id() {
+        let dictionary = Dictionary::new(Language::English)
+            .expect("the bundled English dictionary loads");
+        let mut sentence = Sentence::new(&dictionary, SENTENCE)
+            .expect("the text has no NUL");
+        sentence.parse().expect("the sentence parses");
+        let linkage = sentence.linkage(0).expect("a parse");
+        let words: Vec<_> = linkage.words().collect();
+
+        let mut graph = ConceptualGraph::new(&sentence);
+        let eats = Concept {
+            words: vec![words[3]],
+            context: Context::default(),
+        };
+        let first = graph.add_concept(eats.clone());
+        let second = graph.add_concept(eats);
+
+        assert_eq!(first, second);
+        assert_eq!(graph.concepts.len(), 1);
+    }
+
+    #[test]
+    fn negated_concept_displays_with_a_bang() {
+        let dictionary = Dictionary::new(Language::English)
+            .expect("the bundled English dictionary loads");
+        let mut sentence = Sentence::new(&dictionary, SENTENCE)
+            .expect("the text has no NUL");
+        sentence.parse().expect("the sentence parses");
+        let linkage = sentence.linkage(0).expect("a parse");
+        let words: Vec<_> = linkage.words().collect();
+
+        let mut graph = ConceptualGraph::new(&sentence);
+        let girl = graph.add_concept(Concept {
+            words: vec![words[2]],
+            context: Context::default(),
+        });
+        let eats = graph.add_concept(Concept {
+            words: vec![words[3]],
+            context: Context {
+                negated: true,
+                ..Context::default()
+            },
+        });
+        graph.relations.push(ConceptualRelation::Agent {
+            actor: girl,
+            action: eats,
+        });
+
+        assert_eq!(graph.to_string(), "Agent(girl, !eats)");
+    }
+}
