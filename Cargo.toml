@@ -1,0 +1,4 @@
+[workspace]
+members = ["conceptual_graphs"]
+exclude = ["link-grammar-rust-bindings"]
+resolver = "3"
