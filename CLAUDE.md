@@ -15,10 +15,11 @@ The same input must always give the same output. Avoid anything non-deterministi
 
 ## Repository state
 
-Early stage. There is no project code yet, only the foundations:
+Early stage. The `conceptual_graphs` crate holds the conceptual graph types. The rest are foundations:
 
 | Path | What it is |
 |---|---|
+| `conceptual_graphs/` | The conceptual graph types (`ConceptualGraph`, `Concept`, `Context`, `ConceptualRelation`), built on link-grammar's `Sentence` and `Word`. |
 | `link-grammar-rust-bindings/` | Git submodule (`sagi21805/link-grammar-rust-bindings`). Rust bindings: `link-grammar-sys` (raw FFI) and `link-grammar` (safe API). It has its own nested submodule, upstream C `link-grammar` 5.13.2. |
 | `sources/link-grammar.pdf` | Sleator & Temperley, *Parsing English with a Link Grammar* (1991). The original link grammar paper. |
 | `sources/conceptual-graphs.pdf` | Sowa, *Conceptual Graphs* (Handbook of Knowledge Representation, ch. 5). The CG notation and its logic (CGIF, Common Logic mapping). |
@@ -29,7 +30,7 @@ Read the PDFs (`pdftotext` works) before designing the CG encoding or the databa
 ## Language and tooling
 
 - Rust, edition 2024, stable toolchain. Follow the `rust-style` skill for all Rust code.
-- The new code's crate layout is undecided. When adding it, prefer a Cargo workspace at the repo root that depends on `link-grammar` by path (`link-grammar-rust-bindings/link-grammar`). 
+- The root `Cargo.toml` is a workspace whose only member is `conceptual_graphs`, which depends on `link-grammar` by path (`link-grammar-rust-bindings/link-grammar`). The workspace excludes the submodule, which has its own workspace.
 
 ## Setup and commands
 
