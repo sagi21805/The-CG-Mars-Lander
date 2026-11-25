@@ -1,0 +1,3 @@
+[submodule "link-grammar-rust-bindings"]
+	path = link-grammar-rust-bindings
+	url = https://github.com/sagi21805/link-grammar-rust-bindings.git
