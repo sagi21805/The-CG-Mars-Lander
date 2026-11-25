@@ -1,8 +1,9 @@
 use std::fmt;
 use std::ops::Index;
 
-use link_grammar::Sentence;
+use link_grammar::{Linkage, Sentence};
 
+use crate::link_rules::{FoundRelation, LINK_RULES};
 use crate::{Concept, ConceptualRelation};
 
 /// One sentence as a conceptual graph, in Fuchs's tuple form. Each
@@ -71,6 +72,44 @@ impl<'l> ConceptualGraph<'l> {
         }
     }
 
+    /// The graph Fuchs's rules build from `linkage`, a linkage of
+    /// `sentence`. Each rule tries every link. Relations come out grouped
+    /// by rule, in the rules' fixed order, and in link order within a
+    /// rule.
+    ///
+    /// ```
+    /// use conceptual_graphs::ConceptualGraph;
+    /// use link_grammar::{Dictionary, Language, Sentence};
+    ///
+    /// let dictionary = Dictionary::new(Language::English)?;
+    /// let mut sentence =
+    ///     Sentence::new(&dictionary, "The girl doesn't eat pie.")?;
+    /// sentence.parse()?;
+    /// let linkage = sentence.linkage(0).expect("a parse");
+    /// let graph = ConceptualGraph::from_linkage(&sentence, &linkage);
+    ///
+    /// assert_eq!(
+    ///     graph.to_string(),
+    ///     "Agent(girl, doesn't-eat)\nObject(doesn't-eat, pie)",
+    /// );
+    /// // `Agent` and `Object` share the verb concept.
+    /// assert_eq!(graph.concepts.len(), 3);
+    /// # Ok::<(), link_grammar::Error>(())
+    /// ```
+    pub fn from_linkage(
+        sentence: &'l Sentence<'l>,
+        linkage: &'l Linkage<'l>,
+    ) -> Self {
+        let mut graph = Self::new(sentence);
+        let found = LINK_RULES
+            .into_iter()
+            .flat_map(|rule| linkage.links().filter_map(rule));
+        for relation in found {
+            graph.add_relation(relation);
+        }
+        graph
+    }
+
     /// Adds `concept` and returns its id. A concept with the same words
     /// is added once, so the second call returns the first id and keeps
     /// the first concept's context.
@@ -87,6 +126,13 @@ impl<'l> ConceptualGraph<'l> {
             u16::try_from(index)
                 .expect("a sentence has fewer than 65536 concepts"),
         )
+    }
+
+    /// Adds the concepts of `found`, merging any the graph already has,
+    /// and the relation between them.
+    fn add_relation(&mut self, found: FoundRelation<'l>) {
+        let relation = found.map(|concept| self.add_concept(concept));
+        self.relations.push(relation);
     }
 }
 
