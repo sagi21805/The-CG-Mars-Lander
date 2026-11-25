@@ -2,7 +2,7 @@ use conceptual_graphs::ConceptualGraph;
 use link_grammar::{Dictionary, Language, Sentence};
 
 fn main() {
-    let text = "Today I went to the mall and bought iceream";
+    let text = "A girl eats pie";
     let dictionary = Dictionary::new(Language::English)
         .expect("the bundled English dictionary loads");
     let mut sentence =
