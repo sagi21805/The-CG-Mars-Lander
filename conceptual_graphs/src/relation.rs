@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::ConceptId;
 
 /// A relation between concepts, from Fuchs's set (`theory.pdf`,
@@ -76,6 +78,19 @@ impl<C> ConceptualRelation<C> {
                 object: f(object),
             },
         }
+    }
+}
+
+/// Fuchs's tuple notation, such as `Agent(girl, eats)`.
+impl<C: fmt::Display> fmt::Display for ConceptualRelation<C> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let arguments = self
+            .arguments()
+            .iter()
+            .map(|concept| concept.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        write!(f, "{}({arguments})", self.name())
     }
 }
 

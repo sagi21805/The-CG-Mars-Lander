@@ -9,15 +9,14 @@ use crate::word_walk::WordWalk;
 use crate::{Concept, ConceptualRelation};
 
 /// A relation a rule found, holding its concepts instead of their ids.
-pub(crate) type FoundRelation<'l> = ConceptualRelation<Concept<'l>>;
+pub type FoundRelation<'l> = ConceptualRelation<Concept<'l>>;
 
 /// One of Fuchs's transformation rules. It returns the relation it finds
 /// at a link, or `None` when the link doesn't have its shape.
-pub(crate) type LinkRule =
-    for<'l> fn(Link<'l>) -> Option<FoundRelation<'l>>;
+pub type LinkRule = for<'l> fn(Link<'l>) -> Option<FoundRelation<'l>>;
 
 /// Every rule, in the order their relations appear in a graph.
-pub(crate) const LINK_RULES: [LinkRule; 6] = [
+pub const LINK_RULES: [LinkRule; 6] = [
     subject,
     relative_subject,
     object,

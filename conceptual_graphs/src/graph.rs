@@ -3,7 +3,7 @@ use std::ops::Index;
 
 use link_grammar::{Linkage, Sentence};
 
-use crate::link_rules::{FoundRelation, LINK_RULES};
+use crate::link_rules::{FoundRelation, LINK_RULES, LinkRule};
 use crate::{Concept, ConceptualRelation};
 
 /// One sentence as a conceptual graph, in Fuchs's tuple form. Each
@@ -100,9 +100,54 @@ impl<'l> ConceptualGraph<'l> {
         sentence: &'l Sentence<'l>,
         linkage: &'l Linkage<'l>,
     ) -> Self {
+        Self::from_rules(sentence, linkage, &LINK_RULES)
+    }
+
+    /// The graph `rules` build from `linkage`, a linkage of `sentence`.
+    /// Each rule tries every link, and relations come out in `rules`
+    /// order, then link order. Use it to try a rule before adding it to
+    /// [`LINK_RULES`].
+    ///
+    /// ```
+    /// use conceptual_graphs::{
+    ///     Concept, ConceptualGraph, ConceptualRelation, FoundRelation,
+    ///     LINK_RULES, LinkPattern,
+    /// };
+    /// use link_grammar::{Dictionary, Language, Link, Sentence};
+    ///
+    /// /// `ceased -Pg- existing` gives `Object(ceased, existing)`.
+    /// /// Eq. 6.4.
+    /// fn gerund_object<'l>(link: Link<'l>) -> Option<FoundRelation<'l>> {
+    ///     const GERUND: LinkPattern = LinkPattern::new("P", "g");
+    ///     GERUND.matches(link.label()).then(|| ConceptualRelation::Object {
+    ///         action: Concept::verb(link.left_word()),
+    ///         object: Concept::single(link.right_word()),
+    ///     })
+    /// }
+    ///
+    /// let dictionary = Dictionary::new(Language::English)?;
+    /// let mut sentence =
+    ///     Sentence::new(&dictionary, "The football ceased existing.")?;
+    /// sentence.parse()?;
+    /// let linkage = sentence.linkage(0).expect("a parse");
+    /// let mut rules = LINK_RULES.to_vec();
+    /// rules.push(gerund_object);
+    /// let graph = ConceptualGraph::from_rules(&sentence, &linkage, &rules);
+    ///
+    /// assert_eq!(
+    ///     graph.to_string(),
+    ///     "Agent(football, ceased)\nObject(ceased, existing)",
+    /// );
+    /// # Ok::<(), link_grammar::Error>(())
+    /// ```
+    pub fn from_rules(
+        sentence: &'l Sentence<'l>,
+        linkage: &'l Linkage<'l>,
+        rules: &[LinkRule],
+    ) -> Self {
         let mut graph = Self::new(sentence);
-        let found = LINK_RULES
-            .into_iter()
+        let found = rules
+            .iter()
             .flat_map(|rule| linkage.links().filter_map(rule));
         for relation in found {
             graph.add_relation(relation);
@@ -152,13 +197,7 @@ impl fmt::Display for ConceptualGraph<'_> {
             if line > 0 {
                 f.write_str("\n")?;
             }
-            let arguments = relation
-                .arguments()
-                .into_iter()
-                .map(|&id| self[id].to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
-            write!(f, "{}({arguments})", relation.name())?;
+            write!(f, "{}", relation.map(|id| &self[id]))?;
         }
         Ok(())
     }
