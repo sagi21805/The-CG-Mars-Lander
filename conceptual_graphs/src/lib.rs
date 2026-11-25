@@ -1,6 +1,7 @@
 mod concept;
 mod graph;
 mod link_pattern;
+mod link_rules;
 mod relation;
 mod word_walk;
 
