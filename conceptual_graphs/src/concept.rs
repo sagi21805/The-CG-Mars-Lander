@@ -2,6 +2,8 @@ use std::fmt;
 
 use link_grammar::Word;
 
+use crate::word_walk::WordWalk;
+
 /// A thing, an action or a property that the sentence mentions, with
 /// what the sentence says about it.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -21,6 +23,37 @@ pub struct Context<'l> {
     /// The words that count the concept, such as `five` in "five pies".
     /// Empty when the sentence doesn't count it.
     pub quantity: Vec<Word<'l>>,
+}
+
+impl<'l> Concept<'l> {
+    /// The concept of the verb `word`, with its whole verb group.
+    pub(crate) fn verb(word: Word<'l>) -> Self {
+        Self {
+            words: word.verb_group(),
+            context: Context::default(),
+        }
+    }
+
+    /// The concept of the noun `word`, with its proper-noun chain and, as
+    /// its quantity, the numbers that count it. Fuchs counts only
+    /// objects, and §6.12 item 10 asks for every noun.
+    pub(crate) fn noun(word: Word<'l>) -> Self {
+        Self {
+            words: word.noun_group(),
+            context: Context {
+                quantity: word.quantifier(),
+                ..Context::default()
+            },
+        }
+    }
+
+    /// A concept of `word` alone, such as a preposition or an adverb.
+    pub(crate) fn single(word: Word<'l>) -> Self {
+        Self {
+            words: vec![word],
+            context: Context::default(),
+        }
+    }
 }
 
 /// Fuchs's tuple notation for one argument, such as `has-invested`,
