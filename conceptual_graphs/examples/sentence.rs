@@ -1,9 +1,10 @@
 use conceptual_graphs::ConceptualGraph;
-use link_grammar::{Dictionary, Language, Sentence};
+use link_grammar::english::English;
+use link_grammar::{Dictionary, Sentence};
 
 fn main() {
     let text = "A girl eats pie";
-    let dictionary = Dictionary::new(Language::English)
+    let dictionary = Dictionary::new(English)
         .expect("the bundled English dictionary loads");
     let mut sentence =
         Sentence::new(&dictionary, text).expect("the text has no NUL");

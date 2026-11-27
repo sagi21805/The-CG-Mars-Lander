@@ -5,27 +5,30 @@ use std::iter::successors;
 
 use extend::ext;
 use link_grammar::Word;
+use link_grammar::english::Relation;
 
 use crate::link_pattern::LinkPattern;
 
 /// `has` to `invested`. Eq. 5.5.
-const PERFECT_TENSE: LinkPattern = LinkPattern::new("PP", "");
+const PERFECT_TENSE: LinkPattern = LinkPattern::new(Relation::PP, "");
 
 /// `would` to `establish`, `doesn't` to `eat`. Eq. 5.7.
-const INFINITIVE: LinkPattern = LinkPattern::new("I", "");
+const INFINITIVE: LinkPattern = LinkPattern::new(Relation::I, "");
 
 /// `Rupert` to `Murdoch`. Eq. 6.2.
-const PROPER_NOUN_CHAIN: LinkPattern = LinkPattern::new("G", "");
+const PROPER_NOUN_CHAIN: LinkPattern = LinkPattern::new(Relation::G, "");
 
 /// `five` to `pies`. Eq. 5.5.
-const NUMBER_DETERMINER: LinkPattern = LinkPattern::new("D", "mcn");
+const NUMBER_DETERMINER: LinkPattern =
+    LinkPattern::new(Relation::D, "mcn");
 
 /// `million` to `dollars`. Eq. 5.5 uses `Dmcn` here, and link-grammar
 /// 5.13.2 labels this link `NIn`, which splits into `NI` and `n`.
-const LARGE_NUMBER_DETERMINER: LinkPattern = LinkPattern::new("NI", "n");
+const LARGE_NUMBER_DETERMINER: LinkPattern =
+    LinkPattern::new(Relation::NI, "n");
 
 /// `one` to `million`. Eq. 5.5.
-const NUMBER_CHAIN: LinkPattern = LinkPattern::new("NN", "");
+const NUMBER_CHAIN: LinkPattern = LinkPattern::new(Relation::NN, "");
 
 /// Walks from a word along its links, for writing rules.
 #[ext(name = WordWalk)]

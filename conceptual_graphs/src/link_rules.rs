@@ -3,6 +3,7 @@
 //! looks for, and returns the relation it found, or `None`.
 
 use link_grammar::Link;
+use link_grammar::english::Relation;
 
 use crate::link_pattern::LinkPattern;
 use crate::word_walk::WordWalk;
@@ -11,17 +12,17 @@ use crate::{Concept, ConceptualRelation};
 /// A relation a rule found, holding its concepts instead of their ids.
 pub(crate) type FoundRelation<'l> = ConceptualRelation<Concept<'l>>;
 
-const SUBJECT: LinkPattern = LinkPattern::new("S", "");
-const RELATIVE_SUBJECT: LinkPattern = LinkPattern::new("B", "s");
-const OBJECT: LinkPattern = LinkPattern::new("O", "");
+const SUBJECT: LinkPattern = LinkPattern::new(Relation::S, "");
+const RELATIVE_SUBJECT: LinkPattern = LinkPattern::new(Relation::B, "s");
+const OBJECT: LinkPattern = LinkPattern::new(Relation::O, "");
 /// §4.4 writes `MV`, and link-grammar 5.13.2 labels "eats fast" `MVa`. A
 /// bare `MV` would also catch `MVp`, which is [`preposition`]'s.
-const ADVERB_AFTER_VERB: LinkPattern = LinkPattern::new("MV", "a");
-const ADVERB_BEFORE_VERB: LinkPattern = LinkPattern::new("E", "m");
-const PREPOSITION: LinkPattern = LinkPattern::new("MV", "p");
+const ADVERB_AFTER_VERB: LinkPattern = LinkPattern::new(Relation::MV, "a");
+const ADVERB_BEFORE_VERB: LinkPattern = LinkPattern::new(Relation::E, "m");
+const PREPOSITION: LinkPattern = LinkPattern::new(Relation::MV, "p");
 /// Eq. 5.6 writes `Jp`, and Appendix C defines `J` as the link from any
 /// preposition to its object.
-const PREPOSITION_OBJECT: LinkPattern = LinkPattern::new("J", "");
+const PREPOSITION_OBJECT: LinkPattern = LinkPattern::new(Relation::J, "");
 
 /// `girl -S- eats` gives `Agent(girl, eats)`. §4.4 step 2, eq. 5.5,
 /// eq. 6.2.
