@@ -5,12 +5,10 @@
 use link_grammar::Link;
 use link_grammar::english::Relation;
 
+use crate::language_rules::FoundRelation;
 use crate::link_pattern::LinkPattern;
 use crate::word_walk::WordWalk;
 use crate::{Concept, ConceptualRelation};
-
-/// A relation a rule found, holding its concepts instead of their ids.
-pub(crate) type FoundRelation<'l> = ConceptualRelation<Concept<'l>>;
 
 const SUBJECT: LinkPattern = LinkPattern::new(Relation::S, "");
 const RELATIVE_SUBJECT: LinkPattern = LinkPattern::new(Relation::B, "s");
