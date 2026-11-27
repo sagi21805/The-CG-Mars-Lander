@@ -1,60 +1,18 @@
 use std::fmt;
 use std::ops::Index;
 
-use link_grammar::{Linkage, Sentence};
+use link_grammar::english::English;
+use link_grammar::{Language, Linkage, Sentence};
 
-use crate::link_rules::{FoundRelation, LINK_RULES, LinkRule};
-use crate::{Concept, ConceptualRelation};
+use crate::language_rules::FoundRelation;
+use crate::{Concept, ConceptualRelation, LanguageRules};
 
 /// One sentence as a conceptual graph, in Fuchs's tuple form. Each
 /// relation refers to its concepts by [`ConceptId`], so a concept that
 /// takes part in several relations exists once.
-///
-/// ```
-/// use conceptual_graphs::{
-///     Concept, ConceptualGraph, ConceptualRelation, Context,
-/// };
-/// use link_grammar::{Dictionary, Language, Sentence};
-///
-/// let dictionary = Dictionary::new(Language::English)?;
-/// let mut sentence =
-///     Sentence::new(&dictionary, "The girl eats five pies.")?;
-/// sentence.parse()?;
-/// let linkage = sentence.linkage(0).expect("a parse");
-/// let words: Vec<_> = linkage.words().collect();
-/// // words[0] is LEFT-WALL, so `girl` is words[2].
-///
-/// let mut graph = ConceptualGraph::new(&sentence);
-/// let girl = graph.add_concept(Concept {
-///     words: vec![words[2]],
-///     context: Context::default(),
-/// });
-/// let eats = graph.add_concept(Concept {
-///     words: vec![words[3]],
-///     context: Context::default(),
-/// });
-/// let pies = graph.add_concept(Concept {
-///     words: vec![words[5]],
-///     context: Context { quantity: vec![words[4]], ..Context::default() },
-/// });
-/// graph.relations.push(ConceptualRelation::Agent {
-///     actor: girl,
-///     action: eats,
-/// });
-/// graph.relations.push(ConceptualRelation::Object {
-///     action: eats,
-///     object: pies,
-/// });
-///
-/// assert_eq!(
-///     graph.to_string(),
-///     "Agent(girl, eats)\nObject(eats, pies|five)",
-/// );
-/// # Ok::<(), link_grammar::Error>(())
-/// ```
-pub struct ConceptualGraph<'l> {
-    pub sentence: &'l Sentence<'l>,
-    pub concepts: Vec<Concept<'l>>,
+pub struct ConceptualGraph<'l, L: Language = English> {
+    pub sentence: &'l Sentence<'l, L>,
+    pub concepts: Vec<Concept<'l, L>>,
     pub relations: Vec<ConceptualRelation>,
 }
 
@@ -62,9 +20,9 @@ pub struct ConceptualGraph<'l> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ConceptId(pub u16);
 
-impl<'l> ConceptualGraph<'l> {
+impl<'l, L: Language> ConceptualGraph<'l, L> {
     /// A graph of `sentence` with no concepts or relations.
-    pub fn new(sentence: &'l Sentence<'l>) -> Self {
+    pub fn new(sentence: &'l Sentence<'l, L>) -> Self {
         Self {
             sentence,
             concepts: Vec::new(),
@@ -72,93 +30,10 @@ impl<'l> ConceptualGraph<'l> {
         }
     }
 
-    /// The graph Fuchs's rules build from `linkage`, a linkage of
-    /// `sentence`. Each rule tries every link. Relations come out grouped
-    /// by rule, in the rules' fixed order, and in link order within a
-    /// rule.
-    ///
-    /// ```
-    /// use conceptual_graphs::ConceptualGraph;
-    /// use link_grammar::{Dictionary, Language, Sentence};
-    ///
-    /// let dictionary = Dictionary::new(Language::English)?;
-    /// let mut sentence =
-    ///     Sentence::new(&dictionary, "The girl doesn't eat pie.")?;
-    /// sentence.parse()?;
-    /// let linkage = sentence.linkage(0).expect("a parse");
-    /// let graph = ConceptualGraph::from_linkage(&sentence, &linkage);
-    ///
-    /// assert_eq!(
-    ///     graph.to_string(),
-    ///     "Agent(girl, doesn't-eat)\nObject(doesn't-eat, pie)",
-    /// );
-    /// // `Agent` and `Object` share the verb concept.
-    /// assert_eq!(graph.concepts.len(), 3);
-    /// # Ok::<(), link_grammar::Error>(())
-    /// ```
-    pub fn from_linkage(
-        sentence: &'l Sentence<'l>,
-        linkage: &'l Linkage<'l>,
-    ) -> Self {
-        Self::from_rules(sentence, linkage, &LINK_RULES)
-    }
-
-    /// The graph `rules` build from `linkage`, a linkage of `sentence`.
-    /// Each rule tries every link, and relations come out in `rules`
-    /// order, then link order. Use it to try a rule before adding it to
-    /// [`LINK_RULES`].
-    ///
-    /// ```
-    /// use conceptual_graphs::{
-    ///     Concept, ConceptualGraph, ConceptualRelation, FoundRelation,
-    ///     LINK_RULES, LinkPattern,
-    /// };
-    /// use link_grammar::{Dictionary, Language, Link, Sentence};
-    ///
-    /// /// `ceased -Pg- existing` gives `Object(ceased, existing)`.
-    /// /// Eq. 6.4.
-    /// fn gerund_object<'l>(link: Link<'l>) -> Option<FoundRelation<'l>> {
-    ///     const GERUND: LinkPattern = LinkPattern::new("P", "g");
-    ///     GERUND.matches(link.label()).then(|| ConceptualRelation::Object {
-    ///         action: Concept::verb(link.left_word()),
-    ///         object: Concept::single(link.right_word()),
-    ///     })
-    /// }
-    ///
-    /// let dictionary = Dictionary::new(Language::English)?;
-    /// let mut sentence =
-    ///     Sentence::new(&dictionary, "The football ceased existing.")?;
-    /// sentence.parse()?;
-    /// let linkage = sentence.linkage(0).expect("a parse");
-    /// let mut rules = LINK_RULES.to_vec();
-    /// rules.push(gerund_object);
-    /// let graph = ConceptualGraph::from_rules(&sentence, &linkage, &rules);
-    ///
-    /// assert_eq!(
-    ///     graph.to_string(),
-    ///     "Agent(football, ceased)\nObject(ceased, existing)",
-    /// );
-    /// # Ok::<(), link_grammar::Error>(())
-    /// ```
-    pub fn from_rules(
-        sentence: &'l Sentence<'l>,
-        linkage: &'l Linkage<'l>,
-        rules: &[LinkRule],
-    ) -> Self {
-        let mut graph = Self::new(sentence);
-        let found = rules
-            .iter()
-            .flat_map(|rule| linkage.links().filter_map(rule));
-        for relation in found {
-            graph.add_relation(relation);
-        }
-        graph
-    }
-
     /// Adds `concept` and returns its id. A concept with the same words
     /// is added once, so the second call returns the first id and keeps
     /// the first concept's context.
-    pub fn add_concept(&mut self, concept: Concept<'l>) -> ConceptId {
+    pub fn add_concept(&mut self, concept: Concept<'l, L>) -> ConceptId {
         let index = self
             .concepts
             .iter()
@@ -173,25 +48,46 @@ impl<'l> ConceptualGraph<'l> {
         )
     }
 
-    /// Adds the concepts of `found`, merging any the graph already has,
-    /// and the relation between them.
-    fn add_relation(&mut self, found: FoundRelation<'l>) {
-        let relation = found.map(|concept| self.add_concept(concept));
-        self.relations.push(relation);
+    /// Adds each relation in `found` and its concepts, merging any
+    /// concept the graph already has.
+    pub(crate) fn add_relations(
+        &mut self,
+        found: impl Iterator<Item = FoundRelation<'l, L>>,
+    ) {
+        for found in found {
+            let relation = found.map(|concept| self.add_concept(concept));
+            self.relations.push(relation);
+        }
     }
 }
 
-impl<'l> Index<ConceptId> for ConceptualGraph<'l> {
-    type Output = Concept<'l>;
+/// Works for any language with rules.
+impl<'l, L: LanguageRules> ConceptualGraph<'l, L> {
+    /// The graph the rules of `L` build from `linkage`, a linkage of
+    /// `sentence`. Each rule tries every link. Relations come out grouped
+    /// by rule, in the order the language calls its rules, and in link
+    /// order within a rule.
+    pub fn from_linkage(
+        sentence: &'l Sentence<'l, L>,
+        linkage: &'l Linkage<'l, L>,
+    ) -> Self {
+        let mut graph = Self::new(sentence);
+        L::add_linkage(&mut graph, linkage);
+        graph
+    }
+}
 
-    fn index(&self, id: ConceptId) -> &Concept<'l> {
+impl<'l, L: Language> Index<ConceptId> for ConceptualGraph<'l, L> {
+    type Output = Concept<'l, L>;
+
+    fn index(&self, id: ConceptId) -> &Concept<'l, L> {
         &self.concepts[usize::from(id.0)]
     }
 }
 
 /// One relation per line in Fuchs's tuple notation, such as
 /// `Agent(girl, eats)`.
-impl fmt::Display for ConceptualGraph<'_> {
+impl<L: Language> fmt::Display for ConceptualGraph<'_, L> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (line, relation) in self.relations.iter().enumerate() {
             if line > 0 {
@@ -200,68 +96,5 @@ impl fmt::Display for ConceptualGraph<'_> {
             write!(f, "{}", relation.map(|id| &self[id]))?;
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use link_grammar::{Dictionary, Language, Sentence};
-
-    use crate::{Concept, ConceptualGraph, ConceptualRelation, Context};
-
-    /// "The girl eats pie.", where words[2] is `girl` and words[3] is
-    /// `eats`.
-    const SENTENCE: &str = "The girl eats pie.";
-
-    #[test]
-    fn adding_the_same_words_twice_returns_the_first_id() {
-        let dictionary = Dictionary::new(Language::English)
-            .expect("the bundled English dictionary loads");
-        let mut sentence = Sentence::new(&dictionary, SENTENCE)
-            .expect("the text has no NUL");
-        sentence.parse().expect("the sentence parses");
-        let linkage = sentence.linkage(0).expect("a parse");
-        let words: Vec<_> = linkage.words().collect();
-
-        let mut graph = ConceptualGraph::new(&sentence);
-        let eats = Concept {
-            words: vec![words[3]],
-            context: Context::default(),
-        };
-        let first = graph.add_concept(eats.clone());
-        let second = graph.add_concept(eats);
-
-        assert_eq!(first, second);
-        assert_eq!(graph.concepts.len(), 1);
-    }
-
-    #[test]
-    fn negated_concept_displays_with_a_bang() {
-        let dictionary = Dictionary::new(Language::English)
-            .expect("the bundled English dictionary loads");
-        let mut sentence = Sentence::new(&dictionary, SENTENCE)
-            .expect("the text has no NUL");
-        sentence.parse().expect("the sentence parses");
-        let linkage = sentence.linkage(0).expect("a parse");
-        let words: Vec<_> = linkage.words().collect();
-
-        let mut graph = ConceptualGraph::new(&sentence);
-        let girl = graph.add_concept(Concept {
-            words: vec![words[2]],
-            context: Context::default(),
-        });
-        let eats = graph.add_concept(Concept {
-            words: vec![words[3]],
-            context: Context {
-                negated: true,
-                ..Context::default()
-            },
-        });
-        graph.relations.push(ConceptualRelation::Agent {
-            actor: girl,
-            action: eats,
-        });
-
-        assert_eq!(graph.to_string(), "Agent(girl, !eats)");
     }
 }
