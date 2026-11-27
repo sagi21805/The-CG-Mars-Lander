@@ -53,14 +53,13 @@ Do not run `cargo xtask regen` unless the upstream submodule tag moved.
 
 These are the intended concepts. Update this section as decisions are made.
 
-- **Link grammar output** is a set of labeled links between words (`S`, `O`, `D`, `MV`, ...) plus the connector subscripts. The mapping from link types to CG relations is the central design problem. It should be a documented, table-driven mapping rather than ad-hoc code, so it stays inspectable and deterministic.
+- **Link grammar output** is a set of labeled links between words (`S`, `O`, `D`, `MV`, ...) plus the connector subscripts. The mapping from link types to CG relations is the central design problem. For now, each rule is its own hard-coded function in `link_rules.rs`, and `ConceptualGraph::from_linkage` calls each one by name. Don't generalise the rules (registries, tables, plug-in types) unless asked.
 - **Conceptual graphs** are bipartite: concept nodes (type, referent) and relation nodes. Use CGIF/Common Logic from Sowa as the reference for semantics. Keep an internal graph type independent from any serialization format.
 - **Concept types** need a type hierarchy (a lattice) so generalization works. Decide the source: WordNet-style hypernyms, a fixed ontology, or derived from the corpus. This choice dominates retrieval quality.
 - **Associative database**: graphs are indexed by the sub-graph/generalization partial order. A query is placed in the hierarchy and its specializations are retrieved. Preserve provenance (source document and sentence) for every stored graph, so answers are traceable.
-- **Evaluation**: define a small gold set early (sentence, expected CG, question, expected answer) and run it as a regression test. Determinism makes exact-match testing possible, so use it.
+- **Tests**: there are none yet, because the behaviour isn't defined. Don't add tests of any kind, doctests included, unless asked.
 
 ## Conventions
 
 - Keep the core library free of network and model dependencies.
-- Prefer snapshot tests (sentence -> linkage -> CG -> serialized form) for the encoding. Any change to the link-to-relation mapping should show up as a reviewable diff.
 - Cite the relevant paper section in a comment when an implementation choice follows one.
