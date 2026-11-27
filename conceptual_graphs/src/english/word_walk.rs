@@ -1,8 +1,6 @@
 //! The walks that gather an English word group (`theory.pdf`, §5.1,
 //! equations 5.5 and 5.7).
 
-use std::iter::successors;
-
 use extend::ext;
 use link_grammar::Word;
 use link_grammar::english::{English, Relation};
@@ -11,25 +9,28 @@ use crate::link_pattern::LinkPattern;
 use crate::word_walk::WordWalk;
 
 /// `has` to `invested`. Eq. 5.5.
-const PERFECT_TENSE: LinkPattern = LinkPattern::new(Relation::PP, "");
+const PERFECT_TENSE: LinkPattern = LinkPattern::exact(Relation::PP, "");
 
 /// `would` to `establish`, `doesn't` to `eat`. Eq. 5.7.
-const INFINITIVE: LinkPattern = LinkPattern::new(Relation::I, "");
+const INFINITIVE: LinkPattern = LinkPattern::exact(Relation::I, "");
+
+/// The links that join a verb to its auxiliaries.
+const VERB_CHAIN: [LinkPattern; 2] = [PERFECT_TENSE, INFINITIVE];
 
 /// `Rupert` to `Murdoch`. Eq. 6.2.
-const PROPER_NOUN_CHAIN: LinkPattern = LinkPattern::new(Relation::G, "");
+const PROPER_NOUN_CHAIN: LinkPattern = LinkPattern::exact(Relation::G, "");
 
 /// `five` to `pies`. Eq. 5.5.
 const NUMBER_DETERMINER: LinkPattern =
-    LinkPattern::new(Relation::D, "mcn");
+    LinkPattern::exact(Relation::D, "mcn");
 
 /// `million` to `dollars`. Eq. 5.5 uses `Dmcn` here, and link-grammar
 /// 5.13.2 labels this link `NIn`, which is `NI` with the subscript `n`.
 const LARGE_NUMBER_DETERMINER: LinkPattern =
-    LinkPattern::new(Relation::NI, "n");
+    LinkPattern::exact(Relation::NI, "n");
 
 /// `one` to `million`. Eq. 5.5.
-const NUMBER_CHAIN: LinkPattern = LinkPattern::new(Relation::NN, "");
+const NUMBER_CHAIN: LinkPattern = LinkPattern::at_least(Relation::NN, "");
 
 #[ext(name = EnglishWordWalk)]
 pub(crate) impl<'l> Word<'l, English> {
@@ -39,28 +40,16 @@ pub(crate) impl<'l> Word<'l, English> {
     ///
     /// `invested -> has invested`, `doesn't -> doesn't eat`
     fn verb_group(self) -> Vec<Word<'l>> {
-        let first = successors(Some(self), |word| {
-            word.left_by(PERFECT_TENSE)
-                .or_else(|| word.left_by(INFINITIVE))
-        })
-        .last()
-        .expect("successors starts with the word itself");
-        successors(Some(first), |word| {
-            word.right_by(PERFECT_TENSE)
-                .or_else(|| word.right_by(INFINITIVE))
-        })
-        .collect()
+        let mut group = self.left_chain(&VERB_CHAIN);
+        group.extend(self.right_chain(&VERB_CHAIN).into_iter().skip(1));
+        group
     }
 
     /// The noun and the proper nouns chained before it by `G` links.
     ///
     /// `Murdoch -> Rupert Murdoch`
     fn noun_group(self) -> Vec<Word<'l>> {
-        let mut group: Vec<_> =
-            successors(Some(self), |word| word.left_by(PROPER_NOUN_CHAIN))
-                .collect();
-        group.reverse();
-        group
+        self.left_chain(&[PROPER_NOUN_CHAIN])
     }
 
     /// The number words that count this noun, empty if none. Eq. 5.5
@@ -69,12 +58,9 @@ pub(crate) impl<'l> Word<'l, English> {
     ///
     /// `pies -> five`, `dollars -> one million`
     fn quantifier(self) -> Vec<Word<'l>> {
-        let first = self
-            .left_by(NUMBER_DETERMINER)
-            .or_else(|| self.left_by(LARGE_NUMBER_DETERMINER));
-        let mut quantifier: Vec<_> =
-            successors(first, |word| word.left_by(NUMBER_CHAIN)).collect();
-        quantifier.reverse();
-        quantifier
+        self.left_by(NUMBER_DETERMINER)
+            .or_else(|| self.left_by(LARGE_NUMBER_DETERMINER))
+            .map(|number| number.left_chain(&[NUMBER_CHAIN]))
+            .unwrap_or_default()
     }
 }
