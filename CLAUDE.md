@@ -19,7 +19,7 @@ Early stage. The `conceptual_graphs` crate holds the conceptual graph types. The
 
 | Path | What it is |
 |---|---|
-| `conceptual_graphs/` | The conceptual graph types (`ConceptualGraph`, `Concept`, `Context`, `ConceptualRelation`), built on link-grammar's `Sentence` and `Word`. |
+| `conceptual_graphs/` | The conceptual graph types (`ConceptualGraph`, `Concept`, `Context`, `ConceptualRelation`), built on link-grammar's `Sentence` and `Word`. Each language's rules live in their own module (`conceptual_graphs/src/english/`). |
 | `link-grammar-rust-bindings/` | Git submodule (`sagi21805/link-grammar-rust-bindings`). Rust bindings: `link-grammar-sys` (raw FFI) and `link-grammar` (safe API). It has its own nested submodule, upstream C `link-grammar` 5.13.2. |
 | `sources/link-grammar.pdf` | Sleator & Temperley, *Parsing English with a Link Grammar* (1991). The original link grammar paper. |
 | `sources/conceptual-graphs.pdf` | Sowa, *Conceptual Graphs* (Handbook of Knowledge Representation, ch. 5). The CG notation and its logic (CGIF, Common Logic mapping). |
@@ -41,19 +41,20 @@ git submodule update --init --recursive   # required after a plain clone; there 
 Commands, run from `link-grammar-rust-bindings/`:
 
 ```sh
-cargo build                  # see link-grammar/README.md for the `bundled` feature and dictionaries
+cargo build                  # see link-grammar/README.md for the dictionaries
 cargo test
 cargo xtask regen            # regenerate bindgen output and the flex lexer (needs libclang and flex)
+cargo xtask relations        # regenerate each language's relation enum (no libclang or flex needed)
 cargo xtask package-check    # verify the crate builds from its published files
 ```
 
-Do not run `cargo xtask regen` unless the upstream submodule tag moved.
+Do not run `cargo xtask regen` unless the upstream submodule tag moved. Run `cargo xtask relations` when the generator or a dictionary changes.
 
 ## Design notes
 
 These are the intended concepts. Update this section as decisions are made.
 
-- **Link grammar output** is a set of labeled links between words (`S`, `O`, `D`, `MV`, ...) plus the connector subscripts. The mapping from link types to CG relations is the central design problem. For now, each rule is its own hard-coded function in `link_rules.rs`, and `ConceptualGraph::from_linkage` calls each one by name. Don't generalise the rules (registries, tables, plug-in types) unless asked.
+- **Link grammar output** is a set of labeled links between words (`S`, `O`, `D`, `MV`, ...) plus the connector subscripts. The mapping from link types to CG relations is the central design problem. For now, each rule is its own hard-coded function in `english/link_rules.rs`, and English's `LanguageRules::add_linkage` calls each one by name. Don't generalise the rules (registries, tables, plug-in types) unless asked. `LanguageRules` is the only interface between languages, and rules stay hard-coded inside each language.
 - **Conceptual graphs** are bipartite: concept nodes (type, referent) and relation nodes. Use CGIF/Common Logic from Sowa as the reference for semantics. Keep an internal graph type independent from any serialization format.
 - **Concept types** need a type hierarchy (a lattice) so generalization works. Decide the source: WordNet-style hypernyms, a fixed ontology, or derived from the corpus. This choice dominates retrieval quality.
 - **Associative database**: graphs are indexed by the sub-graph/generalization partial order. A query is placed in the hierarchy and its specializations are retrieved. Preserve provenance (source document and sentence) for every stored graph, so answers are traceable.
