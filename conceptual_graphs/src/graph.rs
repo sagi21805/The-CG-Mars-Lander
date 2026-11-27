@@ -85,16 +85,33 @@ impl<'l, L: Language> Index<ConceptId> for ConceptualGraph<'l, L> {
     }
 }
 
-/// One relation per line in Fuchs's tuple notation, such as
-/// `Agent(girl, eats)`.
+/// A struct of the concepts and the relations, each relation naming its
+/// concepts. `{:#}` puts each field on its own line. The sentence is left
+/// out.
 impl<L: Language> fmt::Display for ConceptualGraph<'_, L> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (line, relation) in self.relations.iter().enumerate() {
-            if line > 0 {
-                f.write_str("\n")?;
-            }
-            write!(f, "{}", relation.map(|id| &self[id]))?;
-        }
-        Ok(())
+        let relations = self
+            .relations
+            .iter()
+            .map(|relation| relation.map(|id| &self[id]));
+        f.debug_struct("ConceptualGraph")
+            .field("concepts", &display_list(self.concepts.iter()))
+            .field("relations", &display_list(relations))
+            .finish()
     }
+}
+
+/// A list that prints each of `items` with its `Display`, keeping flags
+/// such as `#`.
+fn display_list<I>(items: I) -> impl fmt::Debug
+where
+    I: Iterator<Item: fmt::Display> + Clone,
+{
+    fmt::from_fn(move |f| {
+        f.debug_list()
+            .entries(items.clone().map(|item| {
+                fmt::from_fn(move |f| fmt::Display::fmt(&item, f))
+            }))
+            .finish()
+    })
 }

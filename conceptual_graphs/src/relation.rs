@@ -18,13 +18,25 @@ pub enum ConceptualRelation<C = ConceptId> {
 }
 
 impl<C> ConceptualRelation<C> {
-    /// The relation's name in the tuple notation, such as `Agent`.
+    /// The relation's name, such as `Agent`.
     pub fn name(&self) -> &'static str {
         match self {
             Self::Agent { .. } => "Agent",
             Self::Object { .. } => "Object",
             Self::Manner { .. } => "Manner",
             Self::Prepositional { .. } => "Prepositional",
+        }
+    }
+
+    /// The names of the relation's fields, in field order.
+    fn field_names(&self) -> &'static [&'static str] {
+        match self {
+            Self::Agent { .. } => &["actor", "action"],
+            Self::Object { .. } => &["action", "object"],
+            Self::Manner { .. } => &["action", "manner"],
+            Self::Prepositional { .. } => {
+                &["head", "preposition", "object"]
+            }
         }
     }
 
@@ -81,15 +93,16 @@ impl<C> ConceptualRelation<C> {
     }
 }
 
-/// Fuchs's tuple notation, such as `Agent(girl, eats)`.
+/// A struct, such as `Agent { actor: girl, action: eats }`. `{:#}` puts
+/// each field on its own line.
 impl<C: fmt::Display> fmt::Display for ConceptualRelation<C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let arguments = self
-            .arguments()
-            .iter()
-            .map(|concept| concept.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        write!(f, "{}({arguments})", self.name())
+        let mut printed = f.debug_struct(self.name());
+        for (field, concept) in
+            self.field_names().iter().zip(self.arguments())
+        {
+            printed.field(field, &format_args!("{concept}"));
+        }
+        printed.finish()
     }
 }
