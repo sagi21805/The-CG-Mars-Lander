@@ -1,3 +1,4 @@
+use extend::ext;
 use link_grammar::english::Relation;
 use link_grammar::{LinkLabel, LinkRelation, Subscript};
 
@@ -72,5 +73,14 @@ impl<R: LinkRelation> LinkPattern<R> {
                 subscript.get(position) == Some(letter)
             })
         })
+    }
+}
+
+/// Alternative patterns, any one of which may match.
+#[ext(name = AnyPattern)]
+pub(crate) impl<R: LinkRelation> [LinkPattern<R>] {
+    /// Whether any of the patterns matches `label`.
+    fn matches_any(&self, label: LinkLabel<R>) -> bool {
+        self.iter().any(|pattern| pattern.matches(label))
     }
 }

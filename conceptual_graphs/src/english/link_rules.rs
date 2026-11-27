@@ -6,11 +6,15 @@ use link_grammar::Link;
 use link_grammar::english::Relation;
 
 use crate::language_rules::FoundRelation;
-use crate::link_pattern::LinkPattern;
+use crate::link_pattern::{AnyPattern, LinkPattern};
 use crate::word_walk::WordWalk;
 use crate::{Concept, ConceptualRelation};
 
-const SUBJECT: LinkPattern = LinkPattern::at_least(Relation::S, "s");
+/// A singular or plural subject, `Ss` or `Sp`.
+const SUBJECT: [LinkPattern; 2] = [
+    LinkPattern::at_least(Relation::S, "s"),
+    LinkPattern::at_least(Relation::S, "p"),
+];
 const RELATIVE_SUBJECT: LinkPattern =
     LinkPattern::at_least(Relation::B, "s");
 const OBJECT: LinkPattern = LinkPattern::at_least(Relation::O, "");
@@ -30,7 +34,7 @@ const PREPOSITION_OBJECT: LinkPattern =
 /// eq. 6.2.
 pub(crate) fn subject<'l>(link: Link<'l>) -> Option<FoundRelation<'l>> {
     SUBJECT
-        .matches(link.label())
+        .matches_any(link.label())
         .then(|| ConceptualRelation::Agent {
             actor: Concept::noun(link.left_word()),
             action: Concept::verb(link.right_word()),
