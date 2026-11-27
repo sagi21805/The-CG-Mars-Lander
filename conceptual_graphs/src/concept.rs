@@ -27,7 +27,7 @@ pub struct Context<'l> {
 
 impl<'l> Concept<'l> {
     /// The concept of the verb `word`, with its whole verb group.
-    pub fn verb(word: Word<'l>) -> Self {
+    pub(crate) fn verb(word: Word<'l>) -> Self {
         Self {
             words: word.verb_group(),
             context: Context::default(),
@@ -37,7 +37,7 @@ impl<'l> Concept<'l> {
     /// The concept of the noun `word`, with its proper-noun chain and, as
     /// its quantity, the numbers that count it. Fuchs counts only
     /// objects, and §6.12 item 10 asks for every noun.
-    pub fn noun(word: Word<'l>) -> Self {
+    pub(crate) fn noun(word: Word<'l>) -> Self {
         Self {
             words: word.noun_group(),
             context: Context {
@@ -48,7 +48,7 @@ impl<'l> Concept<'l> {
     }
 
     /// A concept of `word` alone, such as a preposition or an adverb.
-    pub fn single(word: Word<'l>) -> Self {
+    pub(crate) fn single(word: Word<'l>) -> Self {
         Self {
             words: vec![word],
             context: Context::default(),

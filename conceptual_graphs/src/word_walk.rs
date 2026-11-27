@@ -28,32 +28,8 @@ const LARGE_NUMBER_DETERMINER: LinkPattern = LinkPattern::new("NI", "n");
 const NUMBER_CHAIN: LinkPattern = LinkPattern::new("NN", "");
 
 /// Walks from a word along its links, for writing rules.
-///
-/// ```
-/// use conceptual_graphs::{LinkPattern, WordWalk};
-/// use link_grammar::{Dictionary, Language, Sentence};
-///
-/// let dictionary = Dictionary::new(Language::English)?;
-/// let mut sentence =
-///     Sentence::new(&dictionary, "The fund has invested in Hungary.")?;
-/// sentence.parse()?;
-/// let linkage = sentence.linkage(0).expect("a parse");
-/// let invested = linkage
-///     .words()
-///     .find(|word| word.text() == "invested")
-///     .expect("the sentence has `invested`");
-///
-/// let group: Vec<_> =
-///     invested.verb_group().iter().map(|word| word.text()).collect();
-/// assert_eq!(group, ["has", "invested"]);
-/// let preposition = invested
-///     .right_by(LinkPattern::new("MV", "p"))
-///     .expect("`invested` takes `in`");
-/// assert_eq!(preposition.text(), "in");
-/// # Ok::<(), link_grammar::Error>(())
-/// ```
 #[ext(name = WordWalk)]
-pub impl<'l> Word<'l> {
+pub(crate) impl<'l> Word<'l> {
     /// Fuchs's `[word]Δ_L pattern`. The word at the left end of the first
     /// link matching `pattern` whose right end is this word.
     fn left_by(self, pattern: LinkPattern) -> Option<Word<'l>> {
