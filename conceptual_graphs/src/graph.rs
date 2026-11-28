@@ -95,7 +95,6 @@ impl<L: Language> fmt::Display for ConceptualGraph<'_, L> {
             .iter()
             .map(|relation| relation.map(|id| &self[id]));
         f.debug_struct("ConceptualGraph")
-            .field("concepts", &display_list(self.concepts.iter()))
             .field("relations", &display_list(relations))
             .finish()
     }

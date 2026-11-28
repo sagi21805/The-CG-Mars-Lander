@@ -18,7 +18,11 @@ const INFINITIVE: LinkPattern = LinkPattern::exact(Relation::I, "");
 const VERB_CHAIN: [LinkPattern; 2] = [PERFECT_TENSE, INFINITIVE];
 
 /// `Rupert` to `Murdoch`. Eq. 6.2.
-const PROPER_NOUN_CHAIN: LinkPattern = LinkPattern::exact(Relation::G, "");
+const PROPER_NOUN_CHAIN: [LinkPattern; 3] = [
+    LinkPattern::at_least(Relation::G, ""),
+    LinkPattern::at_least(Relation::AN, ""),
+    LinkPattern::at_least(Relation::GN, ""),
+];
 
 /// `five` to `pies`. Eq. 5.5.
 const NUMBER_DETERMINER: LinkPattern =
@@ -49,7 +53,7 @@ pub(crate) impl<'l> Word<'l, English> {
     ///
     /// `Murdoch -> Rupert Murdoch`
     fn noun_group(self) -> Vec<Word<'l>> {
-        self.left_chain(&[PROPER_NOUN_CHAIN])
+        self.left_chain(&PROPER_NOUN_CHAIN)
     }
 
     /// The number words that count this noun, empty if none. Eq. 5.5
