@@ -27,7 +27,7 @@ relation_enum! {
         /// Fuchs's `purpose`, as in "invested to establish ATMs".
         Purpose { base_verb: C, purpose_verb: C, purpose_object: C },
         /// Sowa's ATTR, as in "a big dog".
-        Attribute { locus: C, attribute: C },
+        Attribute { entity: C, attribute: C },
         /// Fuchs's `OO`, the object of an object, as in "was the owner of
         /// Fox".
         ObjectOfObject { object: C, object_of_object: C },
