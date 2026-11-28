@@ -200,6 +200,38 @@ impl<C> ConceptualRelation<C> {
     }
 }
 
+impl<C: Copy> ConceptualRelation<C> {
+    /// The agent and the object that an `Svo` or a `SubSvo` folds into one
+    /// tuple (`theory.pdf`, §4.4 step 6 and §5.1).
+    ///
+    /// `Svo(girl, eats, pie) -> [Agent(girl, eats), Object(eats, pie)]`
+    pub(crate) fn agent_and_object(&self) -> Option<[Self; 2]> {
+        let (Self::Svo {
+            subject,
+            verb,
+            object,
+        }
+        | Self::SubSvo {
+            subject,
+            verb,
+            object,
+        }) = *self
+        else {
+            return None;
+        };
+        Some([
+            Self::Agent {
+                actor: subject,
+                action: verb,
+            },
+            Self::Object {
+                action: verb,
+                object,
+            },
+        ])
+    }
+}
+
 /// A struct, such as `Agent { actor: girl, action: eats }`. `{:#}` puts
 /// each field on its own line.
 impl<C: fmt::Display> fmt::Display for ConceptualRelation<C> {
