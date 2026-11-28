@@ -238,7 +238,7 @@ pub(crate) fn purpose<'l>(link: Link<'l>) -> Option<FoundRelation<'l>> {
 pub(crate) fn adjective<'l>(link: Link<'l>) -> Option<FoundRelation<'l>> {
     ADJECTIVE.matches(link.label()).then(|| {
         ConceptualRelation::Attribute {
-            locus: Concept::noun(link.right_word()),
+            entity: Concept::noun(link.right_word()),
             attribute: Concept::single(link.left_word()),
         }
     })
@@ -251,7 +251,7 @@ pub(crate) fn noun_modifier<'l>(
 ) -> Option<FoundRelation<'l>> {
     NOUN_MODIFIER.matches(link.label()).then(|| {
         ConceptualRelation::Attribute {
-            locus: Concept::noun(link.right_word()),
+            entity: Concept::noun(link.right_word()),
             attribute: Concept::single(link.left_word()),
         }
     })
