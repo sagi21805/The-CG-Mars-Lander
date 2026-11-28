@@ -1,4 +1,4 @@
-//! Fuchs's rules for English (`theory.pdf`, §4.4, §5.1 and §6.3).
+//! Fuchs's rules for English (`theory.pdf`, §4.4, §5.1 and §6.2 to §6.4).
 
 mod concept;
 mod link_rules;
@@ -8,8 +8,9 @@ use link_grammar::Linkage;
 use link_grammar::english::English;
 
 use self::link_rules::{
-    adverb_after_verb, adverb_before_verb, object, preposition,
-    relative_subject, subject,
+    adjective, adverb_after_verb, adverb_before_verb, infinitive_svo,
+    noun_modifier, object, object_of_object, participle_svo, possessive,
+    preposition, purpose, relative_subject, sub_svo, subject, svo,
 };
 use crate::{ConceptualGraph, LanguageRules};
 
@@ -25,5 +26,14 @@ impl LanguageRules for English {
         graph
             .add_relations(linkage.links().filter_map(adverb_before_verb));
         graph.add_relations(linkage.links().filter_map(preposition));
+        graph.add_relations(linkage.links().filter_map(svo));
+        graph.add_relations(linkage.links().filter_map(infinitive_svo));
+        graph.add_relations(linkage.links().filter_map(participle_svo));
+        graph.add_relations(linkage.links().filter_map(sub_svo));
+        graph.add_relations(linkage.links().filter_map(possessive));
+        graph.add_relations(linkage.links().filter_map(purpose));
+        graph.add_relations(linkage.links().filter_map(adjective));
+        graph.add_relations(linkage.links().filter_map(noun_modifier));
+        graph.add_relations(linkage.links().filter_map(object_of_object));
     }
 }

@@ -59,6 +59,30 @@ impl<'l, L: Language> ConceptualGraph<'l, L> {
             self.relations.push(relation);
         }
     }
+
+    /// Removes each agent and object pair that an `Svo` or a `SubSvo`
+    /// already states, keeping the order of the rest. A pair goes only
+    /// when the graph has both halves.
+    ///
+    /// `Agent(girl, eats), Object(eats, pie), Svo(girl, eats, pie) ->
+    /// Svo(girl, eats, pie)`
+    pub fn reduce(&mut self) {
+        for pair in self.folded_pairs() {
+            self.relations.retain(|relation| !pair.contains(relation));
+        }
+    }
+
+    /// The agent and object pairs that an `Svo` or a `SubSvo` of the graph
+    /// states, where the graph has both halves.
+    fn folded_pairs(&self) -> Vec<[ConceptualRelation; 2]> {
+        self.relations
+            .iter()
+            .filter_map(ConceptualRelation::agent_and_object)
+            .filter(|pair| {
+                pair.iter().all(|half| self.relations.contains(half))
+            })
+            .collect()
+    }
 }
 
 /// Works for any language with rules.
@@ -95,7 +119,6 @@ impl<L: Language> fmt::Display for ConceptualGraph<'_, L> {
             .iter()
             .map(|relation| relation.map(|id| &self[id]));
         f.debug_struct("ConceptualGraph")
-            .field("concepts", &display_list(self.concepts.iter()))
             .field("relations", &display_list(relations))
             .finish()
     }
